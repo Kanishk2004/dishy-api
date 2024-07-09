@@ -1,0 +1,32 @@
+{
+  "name": "backend-api-dishy",
+  "version": "1.0.0",
+  "description": "Dishy - The flavor network",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "backend",
+    "api",
+    "dishy",
+    "recipies",
+    "food"
+  ],
+  "author": "kanishk chandna",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.4"
+  }
+}

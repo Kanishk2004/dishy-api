@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const userSchema = new Schema(
 	{
@@ -31,9 +33,13 @@ const userSchema = new Schema(
 			required: true,
 			unique: true,
 		},
-		idPhoneVerified: {
+		isPhoneVerified: {
 			type: Boolean,
 			default: false,
+		},
+		password: {
+			type: String,
+			required: true,
 		},
 		avatar: {
 			type: String,
@@ -54,6 +60,10 @@ const userSchema = new Schema(
 				message: "Select only from Male or Female",
 			},
 		},
+		isAdmin: {
+			type: Boolean,
+			default: false,
+		},
 		refreshToken: {
 			type: String,
 		},
@@ -73,12 +83,13 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 userSchema.methods.generateAccessToken = function () {
-	return JsonWebTokenError.sign(
+	return jwt.sign(
 		{
 			_id: this._id,
 			email: this._id,
 			username: this.username,
 			fullName: this.fullName,
+			isAdmin: this.isAdmin,
 		},
 		process.env.ACCESS_TOKEN_SECRET,
 		{
@@ -88,7 +99,7 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
-	return JsonWebTokenError.sign(
+	return jwt.sign(
 		{
 			_id: this._id,
 		},

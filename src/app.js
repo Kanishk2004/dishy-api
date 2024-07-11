@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(
 app.use(express.json({ limit: "16kb" })); // to limit the data comming in json form
 app.use(express.urlencoded({ extended: true, limit: "16kb" })); // limiting the data comming through url
 app.use(express.static("public")); // all the images and other assets will be put in public folder outside src dir
+app.use(cookieParser());
 
 // import routes
 import healthCheckRouter from "./routes/healthcheck.routes.js";

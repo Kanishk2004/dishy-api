@@ -1,9 +1,10 @@
 import { User } from "../models/user.models.js";
+import crypto from "crypto";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { AsyncHandler } from "../utils/AsyncHandler.js";
-import { uploadAvatarOnCloudinary } from "../utils/cloudinary.js";
-import { generateOtp, sendMail } from "../utils/sendEmail.js";
+import { deleteAssetOnCloudinary, uploadAvatarOnCloudinary } from "../utils/cloudinary.js";
+import { generateOtp, sendForgotPasswordMail, sendMail } from "../utils/sendEmail.js";
 
 const genOtp = generateOtp(6);
 
@@ -195,4 +196,204 @@ const verifyOtp = AsyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, user, "Email verified successfully"));
 });
 
-export { registerUser, sendEmailOtp, login, verifyOtp, logoutUser };
+const refreshAccessToken = AsyncHandler(async (req, res) => {
+	const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+	if (!incomingRefreshToken) {
+		throw new ApiError(401, "Unauthorized request");
+	}
+
+	try {
+		const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+		const user = await User.findById(decodedToken?._id);
+
+		if (!user) {
+			throw new ApiError(401, "Invalid refresh token");
+		}
+
+		if (incomingRefreshToken !== user?.refreshToken) {
+			throw new ApiError(401, "Refresh token is expired or used");
+		}
+
+		const options = {
+			httpOnly: true,
+			secure: true,
+		};
+
+		const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+		return res
+			.status(200)
+			.cookie("accessToken", accessToken, options)
+			.cookie("refreshToken", newRefreshToken, options)
+			.json(
+				new ApiResponse(
+					200,
+					{
+						accessToken,
+						refreshToken: newRefreshToken,
+					},
+					"Access token refreshed"
+				)
+			);
+	} catch (error) {
+		throw new ApiError(401, error?.message || "Invalid refresh token");
+	}
+});
+
+const forgotPasswordLink = AsyncHandler(async (req, res) => {
+	const { email } = req.body;
+	const user = await User.findOne({ email });
+
+	if (!user) {
+		throw new ApiError(404, "User not found");
+	}
+
+	// Generate a unique token
+	const token = crypto.randomBytes(32).toString("hex");
+	const expirationTime = Date.now() + parseInt(process.env.RESET_PASSWORD_EXPIRATION);
+
+	// Save token and expiration time in the user's record
+	user.resetPasswordToken = token;
+	user.resetPasswordExpires = expirationTime;
+	await user.save();
+
+	// Construct reset link
+	const resetLink = `${process.env.RESET_PASSWORD_BASE_URL}?token=${token}`;
+
+	const sendEmail = await sendForgotPasswordMail(email, resetLink);
+
+	if (!sendEmail.success) {
+		throw new ApiError(500, "Failed to send link via email");
+	}
+
+	return res.status(200).json(new ApiResponse(200, "Success", "Successfully sent reset password link"));
+});
+
+const resetPassword = AsyncHandler(async (req, res) => {
+	const { token, newPassword } = req.body;
+	const user = await User.findOne({
+		resetPasswordToken: token,
+		resetPasswordExpires: { $gt: Date.now() }, // Ensure token has not expired
+	});
+
+	if (!user) {
+		throw new ApiError(400, "Invalid or expired token");
+	}
+
+	// Update password and clear reset token fields
+	user.password = newPassword;
+	user.resetPasswordToken = undefined;
+	user.resetPasswordExpires = undefined;
+	await user.save();
+
+	res.status(200).json(new ApiResponse(200, "success", "Password has been reset"));
+});
+
+const changePassword = AsyncHandler(async (req, res) => {
+	const { oldPassword, newPassword } = req.body;
+
+	if (!(oldPassword || newPassword)) {
+		throw new ApiError(401, "Please provide old and new passwords");
+	}
+
+	const user = await User.findById(req.user._id);
+
+	const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+	if (!isPasswordCorrect) {
+		throw new ApiError(401, "Old password does not match");
+	}
+
+	user.password = newPassword;
+	await user.save({ validateBeforeSave: false });
+
+	return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+
+const getCurrentUser = AsyncHandler(async (req, res) => {
+	return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"));
+});
+
+const updateUserDetails = AsyncHandler(async (req, res) => {
+	const { fullName, email, phone, bio } = req.body;
+
+	if (!fullName & !email & !phone & !bio) {
+		throw new ApiError(400, "Please provide something to update");
+	}
+
+	const user = await User.findById(req.user._id);
+
+	if (fullName) {
+		user.fullName = fullName;
+	}
+	if (email) {
+		user.email = email;
+		user.isEmailVerified = false;
+	}
+	if (phone) {
+		user.phone = phone;
+		user.isPhoneVerified = false;
+	}
+	if (bio) {
+		user.bio = bio;
+	}
+
+	await user.save();
+
+	const updatedUser = await User.findById(req.user._id).select("fullName email username phone bio");
+
+	return res.status(200).json(new ApiResponse(200, updatedUser, "Successfully updated the user details"));
+});
+
+const updateAvatar = AsyncHandler(async (req, res) => {
+	const avatarLocalPath = req.file?.path;
+
+	if (!avatarLocalPath) {
+		throw new ApiError(400, "Avatar file is missing");
+	}
+
+	const avatar = await uploadAvatarOnCloudinary(avatarLocalPath);
+
+	if (!avatar.url) {
+		throw new ApiError(501, "Error while uploading on cloudinary");
+	}
+
+	//Delete old image from cloudinary
+	const oldUser = await User.findById(req.user?._id);
+	await deleteAssetOnCloudinary(oldUser.avatarPublicId);
+
+	const user = await User.findByIdAndUpdate(
+		req.user?._id,
+		{
+			$set: {
+				avatar: avatar.url,
+				avatarPublicId: avatar.public_id,
+			},
+		},
+		{ new: true }
+	).select("username fullName email phone avatar bio");
+
+	return res.status(200).json(new ApiResponse(200, user, "Avatar Image updated successfully"));
+});
+
+const userProfile = AsyncHandler(async (req, res) => {
+	// TODO: get user profile which should include -recepies posted -followers -ratings
+	const { username } = req.params;
+});
+
+export {
+	registerUser,
+	sendEmailOtp,
+	login,
+	verifyOtp,
+	logoutUser,
+	refreshAccessToken,
+	forgotPasswordLink,
+	resetPassword,
+	changePassword,
+	getCurrentUser,
+	updateUserDetails,
+	updateAvatar,
+	userProfile,
+};

@@ -3,7 +3,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { AsyncHandler } from "../utils/AsyncHandler.js";
 import { uploadAvatarOnCloudinary } from "../utils/cloudinary.js";
-import { generateOtp, sendMail } from "../utils/sendGridMail.js";
+import { generateOtp, sendMail } from "../utils/sendEmail.js";
+
+const genOtp = generateOtp(6);
 
 const generateAccessAndRefreshToken = async (userId) => {
 	try {
@@ -158,26 +160,39 @@ const logoutUser = AsyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, "User logged Out", "success"));
 });
 
-const genOtp = generateOtp(6);
-
 const sendEmailOtp = AsyncHandler(async (req, res) => {
 	const { email } = req.user;
-	console.log(genOtp, email);
-	// sendMail(email, genOtp);
+	if (!email) {
+		throw new ApiError(500, "Failed to get the user email");
+	}
+	const sendEmail = await sendMail(email, genOtp);
 
-	return res.json(new ApiResponse(200, `OTP: ${genOtp} sent to ${email} successfully`, "success"));
+	if (!sendEmail.success) {
+		throw new ApiError(500, "Failed to send OTP to the user");
+	}
+
+	return res.json(new ApiResponse(200, `OTP sent to ${email} successfully`, "success"));
 });
 
 const verifyOtp = AsyncHandler(async (req, res) => {
 	const { otp } = req.body;
-	if (genOtp === otp) {
-		console.log("otp matched successfully");
-		// await User.findByIdAndUpdate(req.user?._id, {
 
-		// })
+	if (!otp) {
+		throw new ApiError(401, "Please provide OTP, which is sent to your email address.");
 	}
-	console.log(genOtp, otp);
-	return res.json({ success: "success" });
+
+	if (!(genOtp === otp)) {
+		throw new ApiError(401, "OTP does not match - verification failed!");
+	}
+	const user = await User.findByIdAndUpdate(
+		req.user?._id,
+		{
+			$set: { isEmailVerified: true },
+		},
+		{ new: true }
+	).select("fullName email isEmailVerified");
+
+	return res.status(200).json(new ApiResponse(200, user, "Email verified successfully"));
 });
 
 export { registerUser, sendEmailOtp, login, verifyOtp, logoutUser };

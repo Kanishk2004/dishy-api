@@ -8,7 +8,6 @@ const router = Router();
 router.route("/register").post(upload.single("avatar"), registerUser);
 router.route("/login").post(login);
 router.route("/logout").post(verifyJWT, logoutUser);
-router.route("/verify-email/gen-otp").post(verifyJWT, sendEmailOtp);
-router.route("/verify-email/otp").post(verifyJWT, verifyOtp);
+router.route("/verify-email").post(verifyJWT, sendEmailOtp).patch(verifyJWT, verifyOtp);
 
 export default router;

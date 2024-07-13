@@ -39,7 +39,7 @@ const uploadPicturesOnCloudinary = async (localFilePath) => {
 	try {
 		if (!localFilePath) return null;
 
-		const response = cloudinary.uploader.upload(localFilePath, {
+		const response = await cloudinary.uploader.upload(localFilePath, {
 			folder: "dishy/pictures",
 			resource_type: "auto",
 			transformation: [

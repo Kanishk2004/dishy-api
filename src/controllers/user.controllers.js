@@ -372,7 +372,7 @@ const updateAvatar = AsyncHandler(async (req, res) => {
 			},
 		},
 		{ new: true }
-	).select("username fullName email phone avatar bio");
+	).select("-password");
 
 	return res.status(200).json(new ApiResponse(200, user, "Avatar Image updated successfully"));
 });

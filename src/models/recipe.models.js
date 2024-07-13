@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 const recipeSchema = new Schema(
 	{
@@ -50,11 +50,12 @@ const recipeSchema = new Schema(
 	{ timestamps: true }
 );
 
-recipeSchema.pre("save", function (next) {
-	if (!this.isModified("prepTime") || !this.isModified("cookTime")) return next();
+recipeSchema.pre('save', function (next) {
+	if (!this.isModified('prepTime') || !this.isModified('cookTime'))
+		return next();
 
 	this.totalTime = this.prepTime + this.cookTime;
 	next();
 });
 
-export const Recipe = mongoose.model("Recipe", recipeSchema);
+export const Recipe = mongoose.model('Recipe', recipeSchema);

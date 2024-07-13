@@ -1,18 +1,18 @@
 import { Router } from "express";
 import {
-	changePassword,
-	forgotPasswordLink,
-	getCurrentUser,
+	registerUser,
 	login,
 	logoutUser,
 	refreshAccessToken,
-	registerUser,
-	resetPassword,
 	sendEmailOtp,
-	updateAvatar,
-	updateUserDetails,
-	userProfile,
 	verifyOtp,
+	forgotPasswordLink,
+	resetPassword,
+	changePassword,
+	getCurrentUser,
+	updateUserDetails,
+	updateAvatar,
+	userProfile,
 } from "../controllers/user.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";

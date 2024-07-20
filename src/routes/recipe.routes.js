@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import {
 	createRecipe,
+	deleteImages,
 	deleteRecipe,
+	getRecipeAuthorDetails,
 	getRecipeById,
+	getRecipiesByUserId,
 	getUserRecipies,
-    updateRecipe,
+	updateImages,
+	updateRecipe,
 } from '../controllers/recipe.controllers.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
@@ -22,6 +26,24 @@ router.route('/post').post(
 	createRecipe
 );
 router.route('/myrecipies').get(getUserRecipies);
-router.route('/:recipeid').get(getRecipeById).patch(updateRecipe).delete(deleteRecipe);
+router
+	.route('/:recipeid')
+	.get(getRecipeById)
+	.patch(updateRecipe)
+	.delete(deleteRecipe);
+router.route('/u/:userid').get(getRecipiesByUserId);
+router.route('/author/:recipeid').get(getRecipeAuthorDetails);
+router
+	.route('/image/:recipeid')
+	.post(
+		upload.fields([
+			{
+				name: 'images',
+				maxCount: 5,
+			},
+		]),
+		updateImages
+	)
+	.delete(deleteImages);
 
 export default router;

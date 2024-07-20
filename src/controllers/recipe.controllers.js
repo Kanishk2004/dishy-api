@@ -1,7 +1,10 @@
 import { AsyncHandler } from '../utils/AsyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { uploadPicturesOnCloudinary } from '../utils/cloudinary.js';
+import {
+	deleteAssetOnCloudinary,
+	uploadPicturesOnCloudinary,
+} from '../utils/cloudinary.js';
 import { Recipe } from '../models/recipe.models.js';
 import mongoose from 'mongoose';
 
@@ -127,18 +130,210 @@ const updateRecipe = AsyncHandler(async (req, res) => {
 
 const getRecipiesByUserId = AsyncHandler(async (req, res) => {
 	const { userid } = req.params;
+
+	if (!userid) {
+		throw new ApiError(400, 'Please provide user id');
+	}
+
+	const userRecipies = await Recipe.aggregate([
+		{
+			$match: { author: new mongoose.Types.ObjectId(userid) },
+		},
+	]);
+
+	if (Array.isArray(userRecipies) && userRecipies.length === 0) {
+		throw new ApiError(401, 'No recipe posted by this user');
+	}
+
+	return res
+		.status(200)
+		.json(new ApiResponse(200, userRecipies, 'Successfully fetched recipies'));
 });
 
 const updateImages = AsyncHandler(async (req, res) => {
 	//TODO: take images from req.files upload new images on cloudinary and delete old ones
+
+	const { recipeid } = req.params;
+
+	const recipe = await Recipe.findById(recipeid);
+
+	if (!recipe) {
+		throw new ApiError(401, 'No recipe found');
+	}
+
+	if (!recipe.author.equals(req.user._id)) {
+		throw new ApiError(401, 'Only author is allowed to update the post');
+	}
+
+	let urlArray = [];
+	let publicIdArray = [];
+
+	const recipeImageUploader = async () => {
+		let localPathArray = [];
+
+		//creating an array of local file paths
+		req.files?.images.map((image) => {
+			localPathArray.push(image.path);
+		});
+
+		//for loop to loop through every local path saved in localPathArray and upload it on cloudinary
+		for (let i = 0; i < localPathArray.length; i++) {
+			const uploadedImage = await uploadPicturesOnCloudinary(localPathArray[i]);
+			urlArray.push(uploadedImage.url);
+			publicIdArray.push(uploadedImage.public_id);
+		}
+	};
+
+	if (Array.isArray(req.files?.images)) {
+		await recipeImageUploader();
+		console.log('New Images uploaded successfully');
+	}
+
+	const deleteImageOnCloudinary = async () => {
+		const publicIds = recipe.imagePublicId;
+
+		for (let i = 0; i < publicIds.length; i++) {
+			await deleteAssetOnCloudinary(publicIds[i]);
+		}
+	};
+
+	if (recipe.imagePublicId.length > 0) {
+		await deleteImageOnCloudinary();
+		console.log('Deleted old images from cloudinary');
+	}
+
+	recipe.imageUrl = urlArray;
+	recipe.imagePublicId = publicIdArray;
+
+	await recipe.save();
+
+	return res
+		.status(200)
+		.json(
+			new ApiResponse(200, urlArray, 'Successfully updated all the images')
+		);
+});
+
+const deleteImages = AsyncHandler(async (req, res) => {
+	const { recipeid } = req.params;
+
+	if (!recipeid) {
+		throw new ApiError(401, 'Recipe id not found');
+	}
+
+	const recipe = await Recipe.findById(recipeid);
+
+	if (!recipe) {
+		throw new ApiError(401, 'No recipe found');
+	}
+
+	if (!recipe.author.equals(req.user._id)) {
+		throw new ApiError(401, 'Only author is allowed to update the post');
+	}
+
+	if (recipe.imagePublicId.length === 0) {
+		throw new ApiError(401, 'No image found');
+	}
+
+	const deleteImageOnCloudinary = async () => {
+		const publicIds = recipe.imagePublicId;
+
+		for (let i = 0; i < publicIds.length; i++) {
+			await deleteAssetOnCloudinary(publicIds[i]);
+		}
+	};
+
+	await deleteImageOnCloudinary();
+	console.log('Deleted old images from cloudinary');
+
+	recipe.imageUrl = [];
+	recipe.imagePublicId = [];
+	await recipe.save();
+
+	return res
+		.status(200)
+		.json(
+			new ApiResponse(200, 'Success', 'Successfully deleted all the images')
+		);
 });
 
 const deleteRecipe = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
+
+	if (!recipeid) {
+		throw new ApiError(400, 'No recipe id found');
+	}
+
+	const recipe = await Recipe.findById(recipeid);
+
+	if (!recipe.author.equals(req.user._id)) {
+		throw new ApiError(401, 'Only post author is allowed to delete the post');
+	}
+
+	await recipe.deleteOne();
+
+	return res
+		.status(200)
+		.json(new ApiResponse(200, 'Success', 'Successfully deleted the recipe'));
 });
 
 const getRecipeById = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
+
+	const recipe = await Recipe.findById(recipeid);
+
+	return res
+		.status(200)
+		.json(new ApiResponse(200, recipe, 'Successfully fetched the post'));
+});
+
+const getRecipeAuthorDetails = AsyncHandler(async (req, res) => {
+	const { recipeid } = req.params;
+
+	if (!recipeid) {
+		throw new ApiError(401, 'recipe id not found');
+	}
+
+	const recipe = await Recipe.aggregate([
+		{
+			$match: { _id: new mongoose.Types.ObjectId(recipeid) },
+		},
+		{
+			$lookup: {
+				from: 'users',
+				localField: 'author',
+				foreignField: '_id',
+				as: 'author',
+			},
+		},
+		{
+			$unwind: '$author',
+		},
+		{
+			$project: {
+				'author._id': 1,
+				'author.username': 1,
+				'author.fullname': 1,
+				'author.email': 1,
+				'author.avatar': 1,
+				'author.bio': 1,
+			},
+		},
+	]);
+
+	if (Array.isArray(recipe) && recipe.length === 0) {
+		throw new ApiError(400, 'No recipe found');
+	}
+
+	return res
+		.status(200)
+		.json(
+			new ApiResponse(
+				200,
+				recipe[0].author,
+				'Successfully fetched recipe author details'
+			)
+		);
 });
 
 export {
@@ -149,4 +344,6 @@ export {
 	updateImages,
 	deleteRecipe,
 	getRecipeById,
+	getRecipeAuthorDetails,
+	deleteImages,
 };

@@ -8,11 +8,13 @@ const commentSchema = new Schema(
 		},
 		owner: {
 			type: Schema.Types.ObjectId,
+			ref: 'User',
 			required: true,
 			index: true,
 		},
 		recipe: {
 			type: Schema.Types.ObjectId,
+			ref: 'Recipe',
 			required: true,
 			index: true,
 		},

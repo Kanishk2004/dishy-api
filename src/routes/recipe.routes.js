@@ -35,7 +35,7 @@ router.route('/u/:userid').get(getRecipiesByUserId);
 router.route('/author/:recipeid').get(getRecipeAuthorDetails);
 router
 	.route('/image/:recipeid')
-	.post(
+	.patch(
 		upload.fields([
 			{
 				name: 'images',

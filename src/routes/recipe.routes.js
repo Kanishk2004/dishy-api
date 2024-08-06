@@ -3,6 +3,7 @@ import {
 	createRecipe,
 	deleteImages,
 	deleteRecipe,
+	getAllRecipies,
 	getRecipeAuthorDetails,
 	getRecipeById,
 	getRecipiesByUserId,
@@ -16,6 +17,7 @@ import { upload } from '../middlewares/multer.middleware.js';
 const router = Router();
 router.use(verifyJWT);
 
+router.route('/').get(getAllRecipies);
 router.route('/post').post(
 	upload.fields([
 		{

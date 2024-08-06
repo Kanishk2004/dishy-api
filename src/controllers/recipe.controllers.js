@@ -8,6 +8,20 @@ import {
 import { Recipe } from '../models/recipe.models.js';
 import mongoose from 'mongoose';
 
+const getAllRecipies = AsyncHandler(async (req, res) => {
+	const recipies = await Recipe.find();
+
+	if (!recipies) {
+		throw new ApiError(500, 'Failed to fetch recipies');
+	}
+
+	return res
+		.status(200)
+		.json(
+			new ApiResponse(200, recipies, 'Successfully fetched all the recipies')
+		);
+});
+
 const createRecipe = AsyncHandler(async (req, res) => {
 	const {
 		title,
@@ -346,4 +360,5 @@ export {
 	getRecipeById,
 	getRecipeAuthorDetails,
 	deleteImages,
+	getAllRecipies,
 };

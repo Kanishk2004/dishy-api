@@ -7,7 +7,7 @@ const app = express();
 // using cors as the middleware to restrict the unknown URLs to access our database
 app.use(
 	cors({
-		origin: process.env.CORS_ORIGIN, // origin url to access database - currently allowed from all urls
+		origin: process.env.CORS_ORIGIN,
 		credentials: true,
 	})
 );

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Favorite } from '../models/favorite.models.js';
 import { AsyncHandler } from '../utils/AsyncHandler.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { ApiError } from '../utils/ApiError.js';
 
 const toggleFavorite = AsyncHandler(async (req, res) => {
 	// get the recipe id from the params
@@ -70,6 +71,10 @@ const getUserFavorites = AsyncHandler(async (req, res) => {
 			},
 		},
 	]);
+
+	if (Array.isArray(favorites) && favorites.length === 0) {
+		return res.status(400).json(new ApiError(400, 'User has no favorites'));
+	}
 
 	return res
 		.status(200)

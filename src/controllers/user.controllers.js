@@ -25,10 +25,14 @@ const generateAccessAndRefreshToken = async (userId) => {
 		await user.save({ validateBeforeSave: false });
 		return { accessToken, refreshToken };
 	} catch (error) {
-		throw new ApiError(
-			500,
-			'Something went wrong while generating access and refresh token'
-		);
+		return res
+			.status(500)
+			.json(
+				new ApiError(
+					500,
+					'Something went wrong while generating access and refresh token'
+				)
+			);
 	}
 };
 
@@ -46,7 +50,7 @@ const registerUser = AsyncHandler(async (req, res) => {
 	const { username, fullName, email, password, phone, gender } = req.body;
 
 	if (!(username, fullName, email, phone, gender, password)) {
-		throw new ApiError(400, 'All fields are required');
+		return res.status(400).json(new ApiError(400, 'All fields are required'));
 	}
 
 	const existedUser = await User.findOne({
@@ -55,23 +59,26 @@ const registerUser = AsyncHandler(async (req, res) => {
 
 	if (existedUser) {
 		// console.log(existedUser);
-		throw new ApiError(
-			400,
-			'User with email or username or phone already exists'
-		);
+		return res
+			.status(400)
+			.json(
+				new ApiError(400, 'User with email or username or phone already exists')
+			);
 	}
 
 	let avatarLocalPath = req.file?.path;
 
 	if (!avatarLocalPath) {
-		throw new ApiError(400, 'Avatar is required');
+		return res.status(400).json(new ApiError(400, 'Avatar is required'));
 		// avatarLocalPath = "./public/noavatar.png";
 	}
 
 	const avatar = await uploadAvatarOnCloudinary(avatarLocalPath);
 
 	if (!avatar) {
-		throw new ApiError(400, 'Avatar cloudinary upload failed!');
+		return res
+			.status(500)
+			.json(new ApiError(500, 'Avatar cloudinary upload failed!'));
 	}
 
 	const user = await User.create({
@@ -91,7 +98,9 @@ const registerUser = AsyncHandler(async (req, res) => {
 	);
 
 	if (!newUser) {
-		throw new ApiError(500, 'Failed to register the user');
+		return res
+			.status(500)
+			.json(new ApiError(500, 'Failed to register the user'));
 	}
 
 	return res
@@ -113,7 +122,9 @@ const login = AsyncHandler(async (req, res) => {
 
 	if (!(username || email)) {
 		// same as - if(!username && !email)
-		throw new ApiError(400, 'username or email is required');
+		return res
+			.status(400)
+			.json(new ApiError(400, 'username or email is required'));
 	}
 
 	const user = await User.findOne({
@@ -121,13 +132,13 @@ const login = AsyncHandler(async (req, res) => {
 	});
 
 	if (!user) {
-		throw new ApiError(404, "user doesn't exists!");
+		return res.status(404).json(new ApiError(404, 'user does not exists!'));
 	}
 
 	// using "user" instead of "User" because User methods like (User.findOne) is available through mongoose but the methods we created in user model file is accessed by using "user"
 	const isPasswordValid = await user.isPasswordCorrect(password);
 	if (!isPasswordValid) {
-		throw new ApiError(401, 'Invalid user credentials');
+		return res.status(401).json(new ApiError(401, 'Invalid user credentials'));
 	}
 	const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
 		user._id
@@ -187,12 +198,16 @@ const logoutUser = AsyncHandler(async (req, res) => {
 const sendEmailOtp = AsyncHandler(async (req, res) => {
 	const { email } = req.user;
 	if (!email) {
-		throw new ApiError(500, 'Failed to get the user email');
+		return res
+			.status(500)
+			.json(new ApiError(500, 'Failed to get the user email'));
 	}
 	const sendEmail = await sendMail(email, genOtp);
 
 	if (!sendEmail.success) {
-		throw new ApiError(500, 'Failed to send OTP to the user');
+		return res
+			.status(500)
+			.json(new ApiError(500, 'Failed to send OTP to the user'));
 	}
 
 	return res.json(
@@ -204,14 +219,20 @@ const verifyOtp = AsyncHandler(async (req, res) => {
 	const { otp } = req.body;
 
 	if (!otp) {
-		throw new ApiError(
-			401,
-			'Please provide OTP, which is sent to your email address.'
-		);
+		return res
+			.status(401)
+			.json(
+				new ApiError(
+					401,
+					'Please provide OTP, which is sent to your email address.'
+				)
+			);
 	}
 
 	if (!(genOtp === otp)) {
-		throw new ApiError(401, 'OTP does not match - verification failed!');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'OTP does not match - verification failed!'));
 	}
 	const user = await User.findByIdAndUpdate(
 		req.user?._id,
@@ -231,7 +252,7 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
 		req.cookies.refreshToken || req.body.refreshToken;
 
 	if (!incomingRefreshToken) {
-		throw new ApiError(401, 'Unauthorized request');
+		return res.status(401).json(new ApiError(401, 'Unauthorized request'));
 	}
 
 	try {
@@ -243,11 +264,13 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
 		const user = await User.findById(decodedToken?._id);
 
 		if (!user) {
-			throw new ApiError(401, 'Invalid refresh token');
+			return res.status(401).json(new ApiError(401, 'Invalid refresh token'));
 		}
 
 		if (incomingRefreshToken !== user?.refreshToken) {
-			throw new ApiError(401, 'Refresh token is expired or used');
+			return res
+				.status(401)
+				.json(new ApiError(401, 'Refresh token is expired or used'));
 		}
 
 		const options = {
@@ -272,7 +295,9 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
 				)
 			);
 	} catch (error) {
-		throw new ApiError(401, error?.message || 'Invalid refresh token');
+		return res
+			.status(401)
+			.json(new ApiError(401, error?.message || 'Invalid refresh token'));
 	}
 });
 
@@ -281,7 +306,7 @@ const forgotPasswordLink = AsyncHandler(async (req, res) => {
 	const user = await User.findOne({ email });
 
 	if (!user) {
-		throw new ApiError(404, 'User not found');
+		return res.status(404).json(new ApiError(404, 'User not found'));
 	}
 
 	// Generate a unique token
@@ -300,7 +325,9 @@ const forgotPasswordLink = AsyncHandler(async (req, res) => {
 	const sendEmail = await sendForgotPasswordMail(email, resetLink);
 
 	if (!sendEmail.success) {
-		throw new ApiError(500, 'Failed to send link via email');
+		return res
+			.status(500)
+			.json(new ApiError(500, 'Failed to send link via email'));
 	}
 
 	return res
@@ -318,7 +345,7 @@ const resetPassword = AsyncHandler(async (req, res) => {
 	});
 
 	if (!user) {
-		throw new ApiError(400, 'Invalid or expired token');
+		return res.status(400).json(new ApiError(400, 'Invalid or expired token'));
 	}
 
 	// Update password and clear reset token fields
@@ -336,7 +363,9 @@ const changePassword = AsyncHandler(async (req, res) => {
 	const { oldPassword, newPassword } = req.body;
 
 	if (!(oldPassword || newPassword)) {
-		throw new ApiError(401, 'Please provide old and new passwords');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Please provide old and new passwords'));
 	}
 
 	const user = await User.findById(req.user._id);
@@ -344,7 +373,9 @@ const changePassword = AsyncHandler(async (req, res) => {
 	const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
 	if (!isPasswordCorrect) {
-		throw new ApiError(401, 'Old password does not match');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Old password does not match'));
 	}
 
 	user.password = newPassword;
@@ -365,7 +396,9 @@ const updateUserDetails = AsyncHandler(async (req, res) => {
 	const { username, fullName, email, phone, bio } = req.body;
 
 	if (!username && !fullName && !email && !phone && !bio) {
-		throw new ApiError(400, 'Please provide something to update');
+		return res
+			.status(400)
+			.json(new ApiError(400, 'Please provide something to update'));
 	}
 
 	const user = await User.findById(req.user._id);
@@ -405,13 +438,15 @@ const updateAvatar = AsyncHandler(async (req, res) => {
 	const avatarLocalPath = req.file?.path;
 
 	if (!avatarLocalPath) {
-		throw new ApiError(400, 'Avatar file is missing');
+		return res.status(400).json(new ApiError(400, 'Avatar file is missing'));
 	}
 
 	const avatar = await uploadAvatarOnCloudinary(avatarLocalPath);
 
 	if (!avatar.url) {
-		throw new ApiError(501, 'Error while uploading on cloudinary');
+		return res
+			.status(501)
+			.json(new ApiError(501, 'Error while uploading on cloudinary'));
 	}
 
 	//Delete old image from cloudinary

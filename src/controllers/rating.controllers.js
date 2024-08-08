@@ -45,7 +45,6 @@ const getAverageRecipeRating = AsyncHandler(async (req, res) => {
 					'No rating found'
 				)
 			);
-		// throw new ApiError(400, 'No rating found');
 	}
 
 	const { avgRating, ratingCount } = result[0];
@@ -66,17 +65,19 @@ const addRating = AsyncHandler(async (req, res) => {
 	const { rate } = req.body;
 
 	if (!recipeId) {
-		throw new ApiError(401, 'Recipe id is required');
+		return res.status(400).json(new ApiError(400, 'Recipe id is required'));
 	}
 
 	const recipe = await Recipe.findById(recipeId);
 
 	if (!recipe) {
-		throw new ApiError(401, 'Invalid recipe id');
+		return res.status(400).json(new ApiError(401, 'Invalid recipe id'));
 	}
 
 	if (rate > 5 || rate < 1) {
-		throw new ApiError(401, 'Rating should be between 1 and 5');
+		return res
+			.status(400)
+			.json(new ApiError(400, 'Rating should be between 1 and 5'));
 	}
 
 	const rating = await Rating.create({
@@ -95,13 +96,17 @@ const updateRating = AsyncHandler(async (req, res) => {
 	const { rate } = req.body;
 
 	if (rate > 5 || rate < 0) {
-		throw new ApiError(401, 'Rating should be between 0 and 5');
+		return res
+			.status(400)
+			.json(new ApiError(400, 'Rating should be between 0 and 5'));
 	}
 
 	const rating = await Rating.findById(ratingId);
 
 	if (!rating.owner.equals(req.user?._id)) {
-		throw new ApiError(401, 'Only rating owner is allowed to update rating');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only rating owner is allowed to update rating'));
 	}
 
 	rating.rating = rate;
@@ -116,13 +121,15 @@ const deleteRating = AsyncHandler(async (req, res) => {
 	const { ratingId } = req.params;
 
 	if (!ratingId) {
-		throw new ApiError(401, 'rating id is required');
+		return res.status(400).json(new ApiError(400, 'Rating id is required'));
 	}
 
 	const rating = await Rating.findById(ratingId);
 
 	if (!rating.owner.equals(req.user?._id)) {
-		throw new ApiError(401, 'Only rating owner is allowed to delete rating');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only rating owner is allowed to delete rating'));
 	}
 
 	await rating.deleteOne();

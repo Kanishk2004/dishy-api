@@ -12,7 +12,7 @@ const getAllRecipies = AsyncHandler(async (req, res) => {
 	const recipies = await Recipe.find();
 
 	if (!recipies) {
-		throw new ApiError(500, 'Failed to fetch recipies');
+		return res.status(500).json(new ApiError(500, 'Failed to fetch recipies'));
 	}
 
 	return res
@@ -35,7 +35,9 @@ const createRecipe = AsyncHandler(async (req, res) => {
 	} = req.body;
 
 	if (!title && !description && !ingredients && !instructions && !category) {
-		throw new ApiError(401, 'Required fields are missing');
+		return res
+			.status(400)
+			.json(new ApiError(400, 'Required fields are missing'));
 	}
 
 	let urlArray = [];
@@ -100,17 +102,19 @@ const updateRecipe = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
 
 	if (!recipeid) {
-		throw new ApiError(401, 'Recipe id not found');
+		return res.status(400).json(new ApiError(400, 'Recipe id not found'));
 	}
 
 	const recipe = await Recipe.findById(recipeid);
 
 	if (!recipe) {
-		throw new ApiError(401, 'Post not found in DB');
+		return res.status(401).json(new ApiError(401, 'Post not found in DB'));
 	}
 
 	if (!recipe.author.equals(req.user._id)) {
-		throw new ApiError(401, 'Only post author is allowed to edit the post');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only post author is allowed to edit the post'));
 	}
 
 	const {
@@ -146,7 +150,7 @@ const getRecipiesByUserId = AsyncHandler(async (req, res) => {
 	const { userid } = req.params;
 
 	if (!userid) {
-		throw new ApiError(400, 'Please provide user id');
+		return res.status(400).json(new ApiError(400, 'Please provide user id'));
 	}
 
 	const userRecipies = await Recipe.aggregate([
@@ -156,7 +160,9 @@ const getRecipiesByUserId = AsyncHandler(async (req, res) => {
 	]);
 
 	if (Array.isArray(userRecipies) && userRecipies.length === 0) {
-		throw new ApiError(401, 'No recipe posted by this user');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'No recipe posted by this user'));
 	}
 
 	return res
@@ -172,11 +178,13 @@ const updateImages = AsyncHandler(async (req, res) => {
 	const recipe = await Recipe.findById(recipeid);
 
 	if (!recipe) {
-		throw new ApiError(401, 'No recipe found');
+		return res.status(400).json(new ApiError(400, 'No recipe found'));
 	}
 
 	if (!recipe.author.equals(req.user._id)) {
-		throw new ApiError(401, 'Only author is allowed to update the post');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only author is allowed to update the post'));
 	}
 
 	let urlArray = [];
@@ -232,21 +240,23 @@ const deleteImages = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
 
 	if (!recipeid) {
-		throw new ApiError(401, 'Recipe id not found');
+		return res.status(401).json(new ApiError(401, 'Recipe id not found'));
 	}
 
 	const recipe = await Recipe.findById(recipeid);
 
 	if (!recipe) {
-		throw new ApiError(401, 'No recipe found');
+		return res.status(401).json(new ApiError(401, 'No recipe found'));
 	}
 
 	if (!recipe.author.equals(req.user._id)) {
-		throw new ApiError(401, 'Only author is allowed to update the post');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only author is allowed to update the post'));
 	}
 
 	if (recipe.imagePublicId.length === 0) {
-		throw new ApiError(401, 'No image found');
+		return res.status(401).json(new ApiError(401, 'No image found'));
 	}
 
 	const deleteImageOnCloudinary = async () => {
@@ -275,13 +285,17 @@ const deleteRecipe = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
 
 	if (!recipeid) {
-		throw new ApiError(400, 'No recipe id found');
+		return res.status(400).json(new ApiError(400, 'No recipe id found'));
 	}
 
 	const recipe = await Recipe.findById(recipeid);
 
 	if (!recipe.author.equals(req.user._id)) {
-		throw new ApiError(401, 'Only post author is allowed to delete the post');
+		return res
+			.status(401)
+			.json(
+				new ApiError(401, 'Only post author is allowed to delete the post')
+			);
 	}
 
 	await recipe.deleteOne();
@@ -305,7 +319,7 @@ const getRecipeAuthorDetails = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
 
 	if (!recipeid) {
-		throw new ApiError(401, 'recipe id not found');
+		return res.status(401).json(new ApiError(401, 'Recipe id not found'));
 	}
 
 	const recipe = await Recipe.aggregate([
@@ -335,7 +349,7 @@ const getRecipeAuthorDetails = AsyncHandler(async (req, res) => {
 	]);
 
 	if (Array.isArray(recipe) && recipe.length === 0) {
-		throw new ApiError(400, 'No recipe found');
+		return res.status(401).json(new ApiError(401, 'No recipe found'));
 	}
 
 	return res

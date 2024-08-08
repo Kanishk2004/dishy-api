@@ -36,7 +36,16 @@ const getAverageRecipeRating = AsyncHandler(async (req, res) => {
 	]);
 
 	if (!(Array.isArray(result) && result.length > 0)) {
-		throw new ApiError(400, 'No rating found');
+		return res
+			.status(200)
+			.json(
+				new ApiResponse(
+					200,
+					{ avgRating: 0, ratingCount: 0 },
+					'No rating found'
+				)
+			);
+		// throw new ApiError(400, 'No rating found');
 	}
 
 	const { avgRating, ratingCount } = result[0];
@@ -46,7 +55,7 @@ const getAverageRecipeRating = AsyncHandler(async (req, res) => {
 		.json(
 			new ApiResponse(
 				200,
-				{avgRating, ratingCount},
+				{ avgRating, ratingCount },
 				'Successfully fetched recipe average ratings'
 			)
 		);

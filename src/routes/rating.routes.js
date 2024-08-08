@@ -9,11 +9,14 @@ import {
 } from '../controllers/rating.controllers.js';
 
 const router = Router();
-router.use(verifyJWT);
+// router.use(verifyJWT);
 
 router.route('/:recipeId').get(getRecipeRatings);
 router.route('/avg/:recipeId').get(getAverageRecipeRating);
-router.route('/add/:recipeId').post(addRating);
-router.route('/:ratingId').patch(updateRating).delete(deleteRating);
+router.route('/add/:recipeId').post(verifyJWT, addRating);
+router
+	.route('/:ratingId')
+	.patch(verifyJWT, updateRating)
+	.delete(verifyJWT, deleteRating);
 
 export default router;

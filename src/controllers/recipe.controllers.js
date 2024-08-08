@@ -294,7 +294,7 @@ const deleteRecipe = AsyncHandler(async (req, res) => {
 const getRecipeById = AsyncHandler(async (req, res) => {
 	const { recipeid } = req.params;
 
-	const recipe = await Recipe.findById(recipeid);
+	const recipe = await Recipe.findById(recipeid).select('-imagePublicId');
 
 	return res
 		.status(200)
@@ -327,10 +327,9 @@ const getRecipeAuthorDetails = AsyncHandler(async (req, res) => {
 			$project: {
 				'author._id': 1,
 				'author.username': 1,
-				'author.fullname': 1,
+				'author.fullName': 1,
 				'author.email': 1,
 				'author.avatar': 1,
-				'author.bio': 1,
 			},
 		},
 	]);

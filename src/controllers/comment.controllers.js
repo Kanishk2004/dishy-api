@@ -9,7 +9,7 @@ const getRecipeComments = AsyncHandler(async (req, res) => {
 	const { recipeId } = req.params;
 
 	if (!recipeId) {
-		throw new ApiError(401, 'Invalid recipe id');
+		return res.status(401).json(new ApiError(401, 'Invalid recipe id'));
 	}
 
 	const comments = await Comment.aggregate([
@@ -28,17 +28,17 @@ const addComment = AsyncHandler(async (req, res) => {
 	const { content } = req.body;
 
 	if (!recipeId) {
-		throw new ApiError(401, 'Recipe id is required');
+		return res.status(400).json(new ApiError(400, 'Recipe id is required'));
 	}
 
 	const recipe = await Recipe.findById(recipeId);
 
 	if (!recipe) {
-		throw new ApiError(401, 'Recipe post not found');
+		return res.status(400).json(new ApiError(400, 'Recipe post not found'));
 	}
 
 	if (!content || content.trim() === '') {
-		throw new ApiError(400, 'Content is required');
+		return res.status(400).json(new ApiError(400, 'Content is required'));
 	}
 
 	const comment = await Comment.create({
@@ -57,17 +57,19 @@ const updateComment = AsyncHandler(async (req, res) => {
 	const { commentId } = req.params;
 
 	if (!content || content.trim() === '') {
-		throw new ApiError(401, 'content is required');
+		return res.status(400).json(new ApiError(400, 'Content is required'));
 	}
 
 	if (!commentId) {
-		throw new ApiError(401, 'invalid comment id');
+		return res.status(400).json(new ApiError(400, 'Invalid comment id'));
 	}
 
 	const comment = await Comment.findById(commentId);
 
 	if (!comment.owner.equals(req.user?._id)) {
-		throw new ApiError(401, 'Only owner can modify comment');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only owner can modify comment'));
 	}
 
 	comment.content = content;
@@ -84,13 +86,15 @@ const deleteComment = AsyncHandler(async (req, res) => {
 	const { commentId } = req.params;
 
 	if (!commentId) {
-		throw new ApiError(401, 'invalid comment id');
+		return res.status(400).json(new ApiError(400, 'Invalid comment id'));
 	}
 
 	const comment = await Comment.findById(commentId);
 
 	if (!comment.owner.equals(req.user?._id)) {
-		throw new ApiError(401, 'Only owner can delete the comment');
+		return res
+			.status(401)
+			.json(new ApiError(401, 'Only owner can delete the comment'));
 	}
 
 	await comment.deleteOne();

@@ -97,10 +97,10 @@ This is the backend API for the Recipe Sharing Web Application, built using Node
 - `POST /api/v1/users/forgot-password` - Sent forgot password OTP.
 - `PATCH /api/v1/users/forgot-password` - Authenticates the OTP.
 - `POST /api/v1/users/change-password` - Changes the password.
-- `GET /api/users/me` - Get the authenticated user's profile.
-- `PATCH /api/users/update-account` - Update the authenticated user's profile.
-- `PATCH /api/users/avatar` - Update the user avatar.
-- `GET /api/users/u/:username` - Get the user profile.
+- `GET /api/v1/users/me` - Get the authenticated user's profile.
+- `PATCH /api/v1/users/update-account` - Update the authenticated user's profile.
+- `PATCH /api/v1/users/avatar` - Update the user avatar.
+- `GET /api/v1/users/u/:username` - Get the user profile.
 
 #### Recipes
 

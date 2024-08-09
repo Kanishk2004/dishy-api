@@ -17,17 +17,19 @@ import { upload } from '../middlewares/multer.middleware.js';
 const router = Router();
 // router.use(verifyJWT);
 
-router.route('/').get(getAllRecipies);
-router.route('/post').post(
-	upload.fields([
-		{
-			name: 'images',
-			maxCount: 5,
-		},
-	]),
-	verifyJWT,
-	createRecipe
-);
+router
+	.route('/')
+	.get(getAllRecipies)
+	.post(
+		upload.fields([
+			{
+				name: 'images',
+				maxCount: 5,
+			},
+		]),
+		verifyJWT,
+		createRecipe
+	);
 router.route('/myrecipies').get(verifyJWT, getUserRecipies);
 router
 	.route('/:recipeid')

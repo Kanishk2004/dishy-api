@@ -26,8 +26,7 @@ router.route("/refresh-token").post(verifyJWT, refreshAccessToken);
 router.route("/verify-email").post(verifyJWT, sendEmailOtp).patch(verifyJWT, verifyOtp);
 router.route("/forgot-password").post(forgotPasswordLink).patch(resetPassword);
 router.route("/change-password").post(verifyJWT, changePassword);
-router.route("/me").get(verifyJWT, getCurrentUser);
-router.route("/update-account").patch(verifyJWT, updateUserDetails);
+router.route("/me").get(verifyJWT, getCurrentUser).patch(verifyJWT, updateUserDetails);
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateAvatar);
 router.route("/u/:username").get(userProfile);
 

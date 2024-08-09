@@ -98,26 +98,32 @@ This is the backend API for the Recipe Sharing Web Application, built using Node
 - `PATCH /api/v1/users/forgot-password` - Authenticates the OTP.
 - `POST /api/v1/users/change-password` - Changes the password.
 - `GET /api/v1/users/me` - Get the authenticated user's profile.
-- `PATCH /api/v1/users/update-account` - Update the authenticated user's profile.
+- `PATCH /api/v1/users/me` - Update the authenticated user's profile.
 - `PATCH /api/v1/users/avatar` - Update the user avatar.
 - `GET /api/v1/users/u/:username` - Get the user profile.
 
 #### Recipes
 
-- `GET /api/recipes` - Get all recipes.
-- `POST /api/recipes` - Create a new recipe.
-- `GET /api/recipes/:id` - Get a specific recipe by ID.
-- `PUT /api/recipes/:id` - Update a recipe by ID.
-- `DELETE /api/recipes/:id` - Delete a recipe by ID.
+- `GET /api/recipes/` - Get all recipes.
+- `POST /api/recipes/` - Create a new recipe.
+- `GET /api/recipes/myrecipies` - Get user recipies.
+- `GET /api/recipes/:recipeid` - Get a specific recipe by ID.
+- `PATCH /api/recipes/:recipeid` - Update a recipe by ID.
+- `DELETE /api/recipes/:recipeid` - Delete a recipe by ID.
+- `PATCH /api/recipes/image/:recipeid` - Update recipe images by ID.
+- `DELETE /api/recipes/image/:recipeid` - Update recipe images by ID.
+- `GET /api/recipes/u/:userid` - Get recipies by user ID.
 
 #### Favorites
 
-- `GET /api/favorites` - Get all favorite recipes of the authenticated user.
+- `GET /api/favorites/` - Get all favorite recipes of the authenticated user.
 - `POST /api/favorites/toggle/:recipeId` - Add or remove a recipe from favorites.
 
 #### Ratings
 
 - `POST /api/ratings/:recipeId` - Rate a recipe.
+- `PATCH /api/ratings/:recipeId` - Update recipe rating.
+- `DELETE /api/ratings/:recipeId` - Delete recipe rating.
 - `GET /api/ratings/avg/:recipeId` - Get the average rating of a recipe.
 
 #### Comments

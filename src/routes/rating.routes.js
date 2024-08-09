@@ -11,9 +11,9 @@ import {
 const router = Router();
 // router.use(verifyJWT);
 
-router.route('/:recipeId').get(getRecipeRatings);
+router.route('/:recipeId').get(getRecipeRatings).post(verifyJWT, addRating);
 router.route('/avg/:recipeId').get(getAverageRecipeRating);
-router.route('/add/:recipeId').post(verifyJWT, addRating);
+// router.route('/add/:recipeId')
 router
 	.route('/:ratingId')
 	.patch(verifyJWT, updateRating)

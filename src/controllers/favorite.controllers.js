@@ -52,24 +52,6 @@ const getUserFavorites = AsyncHandler(async (req, res) => {
 		{
 			$match: { owner: req.user?._id },
 		},
-		{
-			$lookup: {
-				from: 'users',
-				localField: 'owner',
-				foreignField: '_id',
-				as: 'owner',
-				pipeline: [
-					{
-						$project: {
-							username: 1,
-							fullname: 1,
-							email: 1,
-							avatar: 1,
-						},
-					},
-				],
-			},
-		},
 	]);
 
 	if (Array.isArray(favorites) && favorites.length === 0) {

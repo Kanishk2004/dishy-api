@@ -34,10 +34,20 @@ const createRecipe = AsyncHandler(async (req, res) => {
 		cuisine,
 	} = req.body;
 
-	if (!title && !description && !ingredients && !instructions && !category) {
-		return res
-			.status(400)
-			.json(new ApiError(400, 'Required fields are missing'));
+	if (!title) {
+		return res.status(400).json(new ApiError(400, 'Title is missing'));
+	}
+	if (!description) {
+		return res.status(400).json(new ApiError(400, 'Description is missing'));
+	}
+	if (!ingredients) {
+		return res.status(400).json(new ApiError(400, 'Ingredients are missing'));
+	}
+	if (!instructions) {
+		return res.status(400).json(new ApiError(400, 'Instructions are missing'));
+	}
+	if (!category) {
+		return res.status(400).json(new ApiError(400, 'Category is missing'));
 	}
 
 	let urlArray = [];

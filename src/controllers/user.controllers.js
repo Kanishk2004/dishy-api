@@ -12,6 +12,8 @@ import {
 	sendForgotPasswordMail,
 	sendMail,
 } from '../utils/sendEmail.js';
+import { Rating } from '../models/rating.models.js';
+import mongoose from 'mongoose';
 
 const genOtp = generateOtp(6);
 
@@ -474,6 +476,20 @@ const userProfile = AsyncHandler(async (req, res) => {
 	const { username } = req.params;
 });
 
+const userRatings = AsyncHandler(async (req, res) => {
+	const userId = req.user?._id;
+
+	const ratings = await Rating.aggregate([
+		{
+			$match: { owner: new mongoose.Types.ObjectId(userId) },
+		},
+	]);
+
+	return res
+		.status(200)
+		.json(new ApiResponse(200, ratings, 'Successfully fetched user ratings'));
+});
+
 export {
 	registerUser,
 	sendEmailOtp,
@@ -488,4 +504,5 @@ export {
 	updateUserDetails,
 	updateAvatar,
 	userProfile,
+	userRatings,
 };

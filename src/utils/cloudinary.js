@@ -1,9 +1,9 @@
-import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
-import dotenv from "dotenv";
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs';
+import dotenv from 'dotenv';
 
 dotenv.config({
-	path: "./.env",
+	path: './.env',
 });
 
 cloudinary.config({
@@ -17,17 +17,18 @@ const uploadAvatarOnCloudinary = async (localFilePath) => {
 		if (!localFilePath) return null;
 
 		const response = await cloudinary.uploader.upload(localFilePath, {
-			folder: "dishy/avatar",
-			resource_type: "auto",
+			folder: 'dishy/avatar',
+			resource_type: 'auto',
 			transformation: [
 				{
-					quality: "auto",
+					quality: 'auto',
 				},
 			],
 		});
 
-		fs.unlinkSync(localFilePath);
-		// console.log(response)
+		if (fs.existsSync(localFilePath)) {
+			fs.unlinkSync(localFilePath); // Delete the file after successful upload
+		}
 		return response;
 	} catch (error) {
 		console.log(error);
@@ -40,16 +41,16 @@ const uploadPicturesOnCloudinary = async (localFilePath) => {
 		if (!localFilePath) return null;
 
 		const response = await cloudinary.uploader.upload(localFilePath, {
-			folder: "dishy/pictures",
-			resource_type: "auto",
+			folder: 'dishy/pictures',
+			resource_type: 'auto',
 			transformation: [
 				{
-					quality: "auto",
+					quality: 'auto',
 				},
 			],
 		});
 
-		fs.unlinkSync(localFilePath);
+		fs.unlinkSync(localFilePath); // Delete the file after successful upload
 		return response;
 	} catch (error) {
 		console.log(error);
@@ -63,7 +64,7 @@ const deleteAssetOnCloudinary = async (cloudinaryPublicId) => {
 
 		//delete the file
 		const response = await cloudinary.uploader.destroy(cloudinaryPublicId, {
-			resource_type: "image",
+			resource_type: 'image',
 		});
 
 		return response;
@@ -72,4 +73,8 @@ const deleteAssetOnCloudinary = async (cloudinaryPublicId) => {
 	}
 };
 
-export { uploadAvatarOnCloudinary, uploadPicturesOnCloudinary, deleteAssetOnCloudinary };
+export {
+	uploadAvatarOnCloudinary,
+	uploadPicturesOnCloudinary,
+	deleteAssetOnCloudinary,
+};

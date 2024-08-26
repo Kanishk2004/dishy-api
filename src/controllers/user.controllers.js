@@ -242,7 +242,7 @@ const verifyOtp = AsyncHandler(async (req, res) => {
 			$set: { isEmailVerified: true },
 		},
 		{ new: true }
-	).select('fullName email isEmailVerified');
+	).select('-password -refreshToken');
 
 	return res
 		.status(200)

@@ -9,16 +9,44 @@ import { Recipe } from '../models/recipe.models.js';
 import mongoose from 'mongoose';
 
 const getAllRecipies = AsyncHandler(async (req, res) => {
-	const recipies = await Recipe.find();
+	const { query, sortType = 'new', userId } = req.query;
 
-	if (!recipies) {
+	const pipeline = [];
+
+	// if (query) {
+	// 	pipeline.push({
+	// 		$match: { $text: { $search: query, $caseSensitive: false } },
+	// 	});
+	// }
+	if (userId) {
+		pipeline.push({
+			$match: { author: new mongoose.Types.ObjectId(userId) },
+		});
+	}
+
+	const sortOrder = sortType === 'new' ? -1 : 1;
+	pipeline.push({
+		$sort: { createdAt: sortOrder },
+	});
+
+	let myAggregate;
+
+	if (JSON.stringify(req.query) === '{}') {
+		myAggregate = await Recipe.find().sort({ createdAt: -1 });
+	}
+
+	if (!(JSON.stringify(req.query) === '{}')) {
+		myAggregate = await Recipe.aggregate(pipeline);
+	}
+
+	if (!myAggregate || myAggregate.length === 0) {
 		return res.status(500).json(new ApiError(500, 'Failed to fetch recipies'));
 	}
 
 	return res
 		.status(200)
 		.json(
-			new ApiResponse(200, recipies, 'Successfully fetched all the recipies')
+			new ApiResponse(200, myAggregate, 'Successfully fetched all the recipies')
 		);
 });
 
@@ -299,6 +327,10 @@ const deleteRecipe = AsyncHandler(async (req, res) => {
 	}
 
 	const recipe = await Recipe.findById(recipeid);
+
+	if (!recipe) {
+		return res.status(404).json(new ApiError(404, 'Recipe not found'));
+	}
 
 	if (!recipe.author.equals(req.user._id)) {
 		return res

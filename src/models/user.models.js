@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import mongoose, { Schema } from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new Schema(
 	{
@@ -46,6 +46,9 @@ const userSchema = new Schema(
 		resetPasswordExpires: {
 			type: Date,
 		},
+		verificationOtp: {
+			type: String,
+		},
 		avatar: {
 			type: String,
 			required: true,
@@ -61,8 +64,8 @@ const userSchema = new Schema(
 		gender: {
 			type: String,
 			enum: {
-				values: ["male", "female"],
-				message: "Select only from Male or Female",
+				values: ['male', 'female'],
+				message: 'Select only from Male or Female',
 			},
 		},
 		isAdmin: {
@@ -76,8 +79,8 @@ const userSchema = new Schema(
 	{ timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
-	if (!this.isModified("password")) return next();
+userSchema.pre('save', async function (next) {
+	if (!this.isModified('password')) return next();
 
 	this.password = await bcrypt.hash(this.password, 10);
 	next();
@@ -115,4 +118,4 @@ userSchema.methods.generateRefreshToken = function () {
 	);
 };
 
-export const User = mongoose.model("User", userSchema);
+export const User = mongoose.model('User', userSchema);

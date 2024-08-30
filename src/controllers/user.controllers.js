@@ -208,6 +208,12 @@ const sendEmailOtp = AsyncHandler(async (req, res) => {
 	}
 	const sendEmail = await sendMail(email, genOtp);
 
+	if (sendEmail.success) {
+		await User.findByIdAndUpdate(req.user?._id, {
+			$set: { verificationOtp: genOtp },
+		});
+	}
+
 	if (!sendEmail.success) {
 		return res
 			.status(500)
@@ -233,22 +239,20 @@ const verifyOtp = AsyncHandler(async (req, res) => {
 			);
 	}
 
-	if (!(genOtp === otp)) {
+	const user = await User.findById(req.user?._id);
+
+	if (!(user.verificationOtp === otp)) {
 		return res
 			.status(401)
 			.json(new ApiError(401, 'OTP does not match - verification failed!'));
 	}
-	const user = await User.findByIdAndUpdate(
-		req.user?._id,
-		{
-			$set: { isEmailVerified: true },
-		},
-		{ new: true }
-	).select('-password -refreshToken');
+
+	user.isEmailVerified = true;
+	const savedUser = await user.save();
 
 	return res
 		.status(200)
-		.json(new ApiResponse(200, user, 'Email verified successfully'));
+		.json(new ApiResponse(200, savedUser, 'Email verified successfully'));
 });
 
 const refreshAccessToken = AsyncHandler(async (req, res) => {

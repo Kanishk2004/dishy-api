@@ -36,21 +36,6 @@ export const verifyJWT = AsyncHandler(async (req, res, next) => {
 				},
 			},
 			{
-				$lookup: {
-					from: 'recipes',
-					localField: '_id',
-					foreignField: 'author',
-					as: 'userRecipes',
-					pipeline: [
-						{
-							$project: {
-								_id: 1,
-							},
-						},
-					],
-				},
-			},
-			{
 				$addFields: {
 					userFavorites: { $arrayElemAt: ['$userFavorites', 0] },
 				},

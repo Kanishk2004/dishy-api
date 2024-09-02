@@ -146,9 +146,56 @@ const login = AsyncHandler(async (req, res) => {
 		user._id
 	);
 
-	const loggedInUser = await User.findById(user._id).select(
-		'-password -refreshToken'
-	);
+	// const loggedInUser = await User.findById(user._id).select(
+	// 	'-password -refreshToken'
+	// );
+
+	const loggedInUser = await User.aggregate([
+		{
+			$match: { _id: new mongoose.Types.ObjectId(user?._id) },
+		},
+		{
+			$lookup: {
+				from: 'favorites',
+				localField: '_id',
+				foreignField: 'owner',
+				as: 'userFavorites',
+				pipeline: [
+					{
+						$project: {
+							recipies: 1,
+						},
+					},
+				],
+			},
+		},
+		{
+			$lookup: {
+				from: 'recipes',
+				localField: '_id',
+				foreignField: 'author',
+				as: 'userRecipes',
+				pipeline: [
+					{
+						$project: {
+							_id: 1,
+						},
+					},
+				],
+			},
+		},
+		{
+			$addFields: {
+				userFavorites: { $arrayElemAt: ['$userFavorites', 0] },
+			},
+		},
+		{
+			$project: {
+				password: 0,
+				refreshToken: 0,
+			},
+		},
+	]);
 
 	const options = {
 		httpOnly: true, //by default anybody can modify your cookie from frontend by giving these options cookies can only be modified on the server
@@ -164,7 +211,7 @@ const login = AsyncHandler(async (req, res) => {
 			new ApiResponse(
 				200,
 				{
-					user: loggedInUser,
+					user: loggedInUser[0],
 					accessToken,
 					refreshToken,
 				},

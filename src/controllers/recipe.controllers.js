@@ -6,6 +6,7 @@ import {
 	uploadPicturesOnCloudinary,
 } from '../utils/cloudinary.js';
 import { Recipe } from '../models/recipe.models.js';
+import { Rating } from '../models/rating.models.js';
 import mongoose from 'mongoose';
 
 const getAllRecipies = AsyncHandler(async (req, res) => {
@@ -339,6 +340,20 @@ const deleteRecipe = AsyncHandler(async (req, res) => {
 				new ApiError(401, 'Only post author is allowed to delete the post')
 			);
 	}
+
+	const deleteImageOnCloudinary = async () => {
+		const publicIds = recipe.imagePublicId;
+
+		for (let i = 0; i < publicIds.length; i++) {
+			await deleteAssetOnCloudinary(publicIds[i]);
+		}
+	};
+
+	await deleteImageOnCloudinary();
+
+	await Rating.deleteMany({
+		recipe: new mongoose.Types.ObjectId(recipe._id),
+	});
 
 	await recipe.deleteOne();
 

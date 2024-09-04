@@ -276,11 +276,43 @@ const verifyOtp = AsyncHandler(async (req, res) => {
 	}
 
 	user.isEmailVerified = true;
-	const savedUser = await user.save();
+	await user.save();
+
+	const loggedInUser = await User.aggregate([
+		{
+			$match: { _id: new mongoose.Types.ObjectId(user?._id) },
+		},
+		{
+			$lookup: {
+				from: 'favorites',
+				localField: '_id',
+				foreignField: 'owner',
+				as: 'userFavorites',
+				pipeline: [
+					{
+						$project: {
+							recipies: 1,
+						},
+					},
+				],
+			},
+		},
+		{
+			$addFields: {
+				userFavorites: { $arrayElemAt: ['$userFavorites', 0] },
+			},
+		},
+		{
+			$project: {
+				password: 0,
+				refreshToken: 0,
+			},
+		},
+	]);
 
 	return res
 		.status(200)
-		.json(new ApiResponse(200, savedUser, 'Email verified successfully'));
+		.json(new ApiResponse(200, loggedInUser[0], 'Email verified successfully'));
 });
 
 const refreshAccessToken = AsyncHandler(async (req, res) => {

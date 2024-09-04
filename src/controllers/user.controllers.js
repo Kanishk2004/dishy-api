@@ -15,7 +15,7 @@ import {
 import { Rating } from '../models/rating.models.js';
 import mongoose from 'mongoose';
 
-const genOtp = generateOtp(6);
+// const genOtp = generateOtp(6);
 
 const generateAccessAndRefreshToken = async (userId) => {
 	try {
@@ -234,6 +234,7 @@ const sendEmailOtp = AsyncHandler(async (req, res) => {
 			.status(500)
 			.json(new ApiError(500, 'Failed to get the user email'));
 	}
+	const genOtp = generateOtp(6);
 	const sendEmail = await sendMail(email, genOtp);
 
 	if (sendEmail.success) {

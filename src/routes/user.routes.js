@@ -14,6 +14,7 @@ import {
 	updateAvatar,
 	userProfile,
 	userRatings,
+	myStats,
 } from '../controllers/user.controllers.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
@@ -38,4 +39,5 @@ router.route('/avatar').patch(verifyJWT, upload.single('avatar'), updateAvatar);
 router.route('/u/:username').get(userProfile);
 
 router.route('/myratings').get(verifyJWT, userRatings);
+router.route('/mystats').get(verifyJWT, myStats);
 export default router;

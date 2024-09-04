@@ -544,6 +544,100 @@ const userProfile = AsyncHandler(async (req, res) => {
 	const { username } = req.params;
 });
 
+const myStats = AsyncHandler(async (req, res) => {
+	const currentUserId = req.user._id;
+
+	const user = await User.aggregate([
+		{
+			$match: { _id: new mongoose.Types.ObjectId(currentUserId) },
+		},
+		{
+			$lookup: {
+				from: 'recipes',
+				localField: '_id',
+				foreignField: 'author',
+				as: 'myRecipes',
+				pipeline: [
+					{
+						$lookup: {
+							from: 'ratings',
+							localField: '_id',
+							foreignField: 'recipe',
+							as: 'recipeRatings',
+						},
+					},
+					{
+						$unwind: {
+							path: '$recipeRatings',
+							preserveNullAndEmptyArrays: true,
+						},
+					},
+					{
+						$group: {
+							_id: '$_id',
+							averageRating: { $avg: '$recipeRatings.rating' },
+							numberOfRatings: { $sum: 1 },
+						},
+					},
+					{
+						$project: {
+							_id: 1, // Include recipe ID
+							averageRating: { $ifNull: ['$averageRating', 0] }, // Handle case where there are no ratings
+							numberOfRatings: { $ifNull: ['$numberOfRatings', 0] },
+						},
+					},
+				],
+			},
+		},
+		{
+			$lookup: {
+				from: 'ratings',
+				localField: '_id',
+				foreignField: 'owner',
+				as: 'ratedRecipes',
+				pipeline: [
+					{
+						$group: {
+							_id: '$recipe',
+						},
+					},
+					{
+						$group: {
+							_id: null,
+							numberOfRecipesRated: { $sum: 1 },
+						},
+					},
+					{
+						$project: {
+							_id: 0,
+							numberOfRecipesRated: 1,
+						},
+					},
+				],
+			},
+		},
+		{
+			$addFields: {
+				recipeCount: { $size: '$myRecipes' },
+				averageRating: { $avg: '$myRecipes.averageRating' },
+				totalRatings: { $sum: '$myRecipes.numberOfRatings' },
+				numberOfRecipesRated: {
+					$arrayElemAt: ['$ratedRecipes.numberOfRecipesRated', 0],
+				},
+			},
+		},
+		{
+			$project: {
+				myRecipes: 0,
+			},
+		},
+	]);
+
+	return res
+		.status(200)
+		.json(new ApiResponse(200, user[0], 'Successfully fetched user stats'));
+});
+
 const userRatings = AsyncHandler(async (req, res) => {
 	const userId = req.user?._id;
 
@@ -573,4 +667,5 @@ export {
 	updateAvatar,
 	userProfile,
 	userRatings,
+	myStats,
 };

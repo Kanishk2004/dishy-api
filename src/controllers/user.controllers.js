@@ -645,6 +645,12 @@ const userRatings = AsyncHandler(async (req, res) => {
 		{
 			$match: { owner: new mongoose.Types.ObjectId(userId) },
 		},
+		{
+			$project: {
+				rating: 1,
+				recipe: 1,
+			},
+		},
 	]);
 
 	return res

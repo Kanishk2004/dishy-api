@@ -139,10 +139,84 @@ const deleteRating = AsyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, 'Success', 'Successfully deleted the rating'));
 });
 
+const getUserRatings = AsyncHandler(async (req, res) => {
+	const { userid } = req.params;
+
+	const myRatings = await Rating.aggregate([
+		{
+			$match: { owner: new mongoose.Types.ObjectId(userid) },
+		},
+		{
+			$lookup: {
+				from: 'recipes',
+				localField: 'recipe',
+				foreignField: '_id',
+				as: 'recipeDetails',
+				pipeline: [
+					{
+						$lookup: {
+							from: 'users',
+							localField: 'author',
+							foreignField: '_id',
+							as: 'recipeAuthor',
+							pipeline: [
+								{
+									$project: {
+										_id: 1,
+										fullName: 1,
+										avatar: 1,
+									},
+								},
+							],
+						},
+					},
+					{
+						$addFields: {
+							recipeAuthor: { $arrayElemAt: ['$recipeAuthor', 0] },
+						},
+					},
+					{
+						$project: {
+							_id: 1,
+							title: 1,
+							imageUrl: 1,
+							recipeAuthor: 1,
+						},
+					},
+				],
+			},
+		},
+		{
+			$addFields: {
+				recipeDetails: { $arrayElemAt: ['$recipeDetails', 0] },
+			},
+		},
+		{
+			$project: {
+				rating: 1,
+				createdAt: 1,
+				recipeDetails: 1,
+			},
+		},
+		{
+			$sort: {
+				createdAt: -1,
+			},
+		},
+	]);
+
+	return res
+		.status(200)
+		.json(
+			new ApiResponse(200, myRatings, 'Successfully fetched user ratings.')
+		);
+});
+
 export {
 	getRecipeRatings,
 	getAverageRecipeRating,
 	addRating,
 	updateRating,
 	deleteRating,
+	getUserRatings,
 };

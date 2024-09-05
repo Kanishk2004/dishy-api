@@ -128,6 +128,45 @@ const getUserRecipies = AsyncHandler(async (req, res) => {
 		{
 			$match: { author: new mongoose.Types.ObjectId(userId) },
 		},
+		{
+			$lookup: {
+				from: 'ratings',
+				localField: '_id',
+				foreignField: 'recipe',
+				as: 'recipeRatings',
+			},
+		},
+		{
+			$addFields: {
+				averageRating: {
+					$avg: {
+						$map: {
+							input: '$recipeRatings',
+							as: 'rating',
+							in: '$$rating.rating',
+						},
+					},
+				},
+				numberOfRatings: {
+					$size: '$recipeRatings',
+				},
+			},
+		},
+		{
+			$project: {
+				_id: 1,
+				title: 1,
+				imageUrl: 1,
+				createdAt: 1,
+				averageRating: { $ifNull: ['$averageRating', 0] }, // Default to 0 if no ratings
+				numberOfRatings: 1,
+			},
+		},
+		{
+			$sort: {
+				createdAt: -1,
+			},
+		},
 	]);
 
 	return res

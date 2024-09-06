@@ -15,6 +15,7 @@ import {
 	userProfile,
 	userRatings,
 	myStats,
+	deleteAccount,
 } from '../controllers/user.controllers.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
@@ -34,7 +35,8 @@ router.route('/change-password').post(verifyJWT, changePassword);
 router
 	.route('/me')
 	.get(verifyJWT, getCurrentUser)
-	.patch(verifyJWT, updateUserDetails);
+	.patch(verifyJWT, updateUserDetails)
+	.delete(verifyJWT, deleteAccount);
 router.route('/avatar').patch(verifyJWT, upload.single('avatar'), updateAvatar);
 router.route('/u/:username').get(userProfile);
 

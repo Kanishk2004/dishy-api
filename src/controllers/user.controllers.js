@@ -13,7 +13,9 @@ import {
 	sendMail,
 } from '../utils/sendEmail.js';
 import { Rating } from '../models/rating.models.js';
-import mongoose from 'mongoose';
+import { Favorite } from '../models/favorite.models.js';
+import { Recipe } from '../models/recipe.models.js';
+import mongoose, { mongo } from 'mongoose';
 
 // const genOtp = generateOtp(6);
 
@@ -658,6 +660,81 @@ const userRatings = AsyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, ratings, 'Successfully fetched user ratings'));
 });
 
+const deleteAccount = AsyncHandler(async (req, res) => {
+	const { password } = req.body;
+	const userId = req.user?._id;
+
+	const user = await User.findById(userId);
+
+	const isPasswordValid = await user.isPasswordCorrect(password);
+	if (!isPasswordValid) {
+		return res.status(401).json(new ApiError(401, 'password does not match!'));
+	}
+
+	await Favorite.deleteOne({
+		owner: new mongoose.Types.ObjectId(userId),
+	});
+
+	await Rating.deleteMany({
+		owner: new mongoose.Types.ObjectId(userId),
+	});
+
+	const userRecipes = await Recipe.aggregate([
+		{
+			$match: { author: new mongoose.Types.ObjectId(userId) },
+		},
+	]);
+
+	const deleteUserRecipes = async (userRecipes) => {
+		if (userRecipes.length > 0) {
+			for (let i = 0; i < userRecipes.length; i++) {
+				const recipeid = userRecipes[i]._id;
+
+				const recipe = await Recipe.findById(recipeid);
+
+				const deleteImageOnCloudinary = async () => {
+					const publicIds = recipe.imagePublicId;
+
+					for (let i = 0; i < publicIds.length; i++) {
+						await deleteAssetOnCloudinary(publicIds[i]);
+					}
+				};
+				await deleteImageOnCloudinary();
+
+				await Rating.deleteMany({
+					recipe: new mongoose.Types.ObjectId(recipe._id),
+				});
+
+				await recipe.deleteOne();
+			}
+		}
+	};
+
+	await deleteUserRecipes(userRecipes);
+
+	await deleteAssetOnCloudinary(user?.avatarPublicId);
+
+	await user.deleteOne();
+
+	const options = {
+		httpOnly: true, //by default anybody can modify your cookie from frontend by giving these options cookies can only be modified on the server
+		secure: true,
+		sameSite: 'None',
+	};
+
+	return res
+		.status(200)
+		.clearCookie('accessToken', options)
+		.clearCookie('refreshToken', options)
+		.json(
+			new ApiResponse(
+				200,
+				'Account deleted permanently',
+				'Account deleted permanently'
+			)
+		);
+});
+
 export {
 	registerUser,
 	sendEmailOtp,
@@ -674,4 +751,5 @@ export {
 	userProfile,
 	userRatings,
 	myStats,
+	deleteAccount,
 };
